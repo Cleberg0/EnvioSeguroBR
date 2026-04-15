@@ -1,0 +1,3 @@
+-- CPF de teste para validação: 799.814.270-30 (Solange da Silva)
+-- Este registro já existe no banco com o upload anterior
+-- Para testar, use o CPF: 79981427030 (sem formatação)
