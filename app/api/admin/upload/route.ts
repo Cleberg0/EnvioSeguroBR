@@ -253,8 +253,9 @@ function detectColumnsFromHeader(header: string[]): { format: string; indices: a
   const descricaoProdutoIdx = headerLower.findIndex((h) => h.includes("descricao_produto") || h.includes("descrição_produto") || h.includes("descricao produto"))
 
   // Detect by CODIGO_RASTREIO + ENDERECO_DESTINO + DESCRICAO_PRODUTO columns
-  if (codigoRastreioIdx >= 0 && enderecoDesinoIdx >= 0 && descricaoProdutoIdx >= 0) {
-    console.log("[v0] Detected DOME/NOME format (CODIGO_RASTREIO, ENDERECO_DESTINO, DESCRICAO_PRODUTO)")
+  if (codigoRastreioIdx >= 0 && enderecoDesinoIdx >= 0) {
+    const envioIdx = headerLower.findIndex((h) => h === "envio" || h.includes("envio"))
+    console.log("[v0] Detected DOME/NOME format (CODIGO_RASTREIO, ENDERECO_DESTINO, DESCRICAO_PRODUTO/ENVIO)")
     return {
       format: "DOME",
       indices: {
@@ -263,7 +264,8 @@ function detectColumnsFromHeader(header: string[]): { format: string; indices: a
         telefone: telefoneIdx >= 0 ? telefoneIdx : 2,
         rastreio: codigoRastreioIdx,
         endereco: enderecoDesinoIdx,
-        produto: descricaoProdutoIdx,
+        // ENVIO column has the real product name, DESCRICAO_PRODUTO has tracking code
+        produto: envioIdx >= 0 ? envioIdx : (descricaoProdutoIdx >= 0 ? descricaoProdutoIdx : -1),
         valor: valorIdx >= 0 ? valorIdx : -1,
       },
     }
