@@ -228,13 +228,13 @@ function detectColumnsFromHeader(header: string[]): { format: string; indices: a
   // Existing formats...
   const nomeLeadIdx = headerLower.findIndex((h) => h.includes("nome do lead") || h.includes("nome_do_lead"))
   const nomeProdutoIdx = headerLower.findIndex(
-    (h) => h.includes("nome do produto") || h.includes("nome_do_produto") || h === "produto",
+    (h) => h.includes("nome do produto") || h.includes("nome_do_produto") || h === "produto" || h.includes("descricao_produto") || h.includes("descrição_produto") || h.includes("descricao produto"),
   )
   const cpfIdx = headerLower.findIndex((h) => h === "cpf" || h.includes("cpf"))
   const telefoneIdx = headerLower.findIndex((h) => h === "telefone" || h.includes("telefone") || h.includes("phone"))
   const valorIdx = headerLower.findIndex((h) => h === "valor" || h.includes("valor") || h.includes("value"))
   const enderecoCompletoIdx = headerLower.findIndex(
-    (h) => h.includes("endereco completo") || h.includes("endereço completo") || h.includes("endereco_completo"),
+    (h) => h.includes("endereco completo") || h.includes("endereço completo") || h.includes("endereco_completo") || h.includes("endereco_destino") || h.includes("endereço_destino") || h.includes("endereco destino"),
   )
   const cidadeIdx = headerLower.findIndex((h) => h === "cidade" || h.includes("city"))
   const estadoIdx = headerLower.findIndex((h) => h === "estado" || h.includes("state") || h === "uf")
@@ -243,6 +243,30 @@ function detectColumnsFromHeader(header: string[]): { format: string; indices: a
   const numeroIdx = headerLower.findIndex((h) => h === "numero" || h === "número" || h.includes("number"))
   const complementoIdx = headerLower.findIndex((h) => h === "complemento" || h.includes("complement"))
   const cepIdx = headerLower.findIndex((h) => h === "cep" || h.includes("zip") || h.includes("postal"))
+  // Support DOME as nome column
+  const domeIdx = headerLower.findIndex((h) => h === "dome" || h === "nome" || h.includes("nome"))
+
+  // DOME format: DOME, CPF, TELEFONE, CODIGO_RASTREIO, ENDERECO_DESTINO, DESCRICAO_PRODUTO, ENVIO
+  const domeFormatIdx = headerLower.findIndex((h) => h === "dome")
+  const codigoRastreioIdx = headerLower.findIndex((h) => h.includes("codigo_rastreio") || h.includes("código_rastreio") || h.includes("codigo rastreio"))
+  const enderecoDesinoIdx = headerLower.findIndex((h) => h.includes("endereco_destino") || h.includes("endereço_destino") || h.includes("endereco destino"))
+  const descricaoProdutoIdx = headerLower.findIndex((h) => h.includes("descricao_produto") || h.includes("descrição_produto") || h.includes("descricao produto"))
+
+  if (domeFormatIdx >= 0 && cpfIdx >= 0) {
+    console.log("[v0] Detected DOME format")
+    return {
+      format: "DOME",
+      indices: {
+        nome: domeFormatIdx,
+        cpf: cpfIdx,
+        telefone: telefoneIdx >= 0 ? telefoneIdx : -1,
+        rastreio: codigoRastreioIdx >= 0 ? codigoRastreioIdx : -1,
+        endereco: enderecoDesinoIdx >= 0 ? enderecoDesinoIdx : enderecoCompletoIdx >= 0 ? enderecoCompletoIdx : -1,
+        produto: descricaoProdutoIdx >= 0 ? descricaoProdutoIdx : nomeProdutoIdx >= 0 ? nomeProdutoIdx : -1,
+        valor: valorIdx >= 0 ? valorIdx : -1,
+      },
+    }
+  }
 
   // New format with "Nome do Lead" column
   if (nomeLeadIdx >= 0 && cpfIdx >= 0) {
@@ -268,11 +292,11 @@ function detectColumnsFromHeader(header: string[]): { format: string; indices: a
   }
 
   // Check for old format with rastreio
-  const rastreioIdx = headerLower.findIndex((h) => h.includes("rastreio") || h.includes("tracking"))
+  const rastreioIdx = headerLower.findIndex((h) => h.includes("rastreio") || h.includes("tracking") || h.includes("codigo_rastreio"))
   const taxidIdx = headerLower.findIndex((h) => h.includes("taxid") || h.includes("tax_id"))
   const nomeIdx = headerLower.findIndex((h) => h === "nome" || h.includes("name"))
-  const enderecoIdx = headerLower.findIndex((h) => h === "endereco" || h.includes("address"))
-  const produtoIdx = headerLower.findIndex((h) => h === "produto" || h.includes("product"))
+  const enderecoIdx = headerLower.findIndex((h) => h === "endereco" || h.includes("address") || h.includes("endereco_destino") || h.includes("endereço_destino"))
+  const produtoIdx = headerLower.findIndex((h) => h === "produto" || h.includes("product") || h.includes("descricao_produto") || h.includes("descrição_produto"))
 
   if (rastreioIdx >= 0 && taxidIdx >= 0) {
     console.log("[v0] Detected NEW RASTREIO format")
@@ -311,11 +335,11 @@ function detectColumnsFromHeader(header: string[]): { format: string; indices: a
   return {
     format: "AUTO",
     indices: {
-      nome: nomeIdx >= 0 ? nomeIdx : 0,
+      nome: domeIdx >= 0 ? domeIdx : (nomeIdx >= 0 ? nomeIdx : 0),
       telefone: telefoneIdx >= 0 ? telefoneIdx : 1,
       cpf: cpfIdx >= 0 ? cpfIdx : 2,
-      endereco: enderecoIdx >= 0 ? enderecoIdx : 3,
-      produto: produtoIdx >= 0 ? produtoIdx : 4,
+      endereco: enderecoIdx >= 0 ? enderecoIdx : (enderecoCompletoIdx >= 0 ? enderecoCompletoIdx : 3),
+      produto: produtoIdx >= 0 ? produtoIdx : (nomeProdutoIdx >= 0 ? nomeProdutoIdx : 4),
       rastreio: rastreioIdx >= 0 ? rastreioIdx : -1,
       valor: valorIdx >= 0 ? valorIdx : -1,
     },
@@ -418,7 +442,28 @@ export async function POST(request: NextRequest) {
       let valor = 0
       let codigoRastreio = ""
 
-      if (format === "REMESSA") {
+      if (format === "DOME") {
+        nome = String(row[indices.nome] || "").trim()
+        const telefoneRaw = parseScientificNotation(row[indices.telefone] || "")
+        telefone = telefoneRaw.replace(/\D/g, "").trim()
+        cpfRaw = parseScientificNotation(row[indices.cpf] || "")
+          .replace(/\D/g, "")
+          .trim()
+        endereco = indices.endereco >= 0 ? String(row[indices.endereco] || "").trim() : ""
+        produto = indices.produto >= 0 ? String(row[indices.produto] || "").trim() : ""
+        if (indices.valor >= 0 && row[indices.valor]) {
+          valor = parsePrice(row[indices.valor])
+        }
+        // Use existing tracking code from file, or generate one
+        if (indices.rastreio >= 0 && row[indices.rastreio]) {
+          const rastreioRaw = parseScientificNotation(row[indices.rastreio] || "").trim()
+          const count = rastreioCount.get(rastreioRaw) || 0
+          rastreioCount.set(rastreioRaw, count + 1)
+          codigoRastreio = count > 0 ? `${rastreioRaw}-${count.toString().padStart(3, "0")}` : rastreioRaw
+        } else {
+          codigoRastreio = generateTrackingCode()
+        }
+      } else if (format === "REMESSA") {
         // REMESSA format: Nome, Telefone, Msg1, Msg2 (with 📦 Item and 📍Endereço), Msg3
         // No CPF in this format - we use telefone as identifier
         nome = String(row[indices.nome] || "").trim()
