@@ -681,6 +681,7 @@ export default function AdminPage() {
                             <th className="p-2 font-medium">Nome</th>
                             <th className="p-2 font-medium">CPF</th>
                             <th className="p-2 font-medium">Telefone</th>
+                            <th className="p-2 font-medium">Endereço</th>
                             <th className="p-2 font-medium">Produto</th>
                             <th className="p-2 font-medium">Código Rastreio</th>
                             <th className="p-2 font-medium">Status</th>
@@ -692,6 +693,7 @@ export default function AdminPage() {
                               <td className="p-2">{pkg.nome}</td>
                               <td className="p-2 font-mono text-xs">{pkg.cpf}</td>
                               <td className="p-2">{pkg.telefone}</td>
+                              <td className="p-2 text-xs">{pkg.endereco}</td>
                               <td className="p-2">{pkg.produto}</td>
                               <td className="p-2 font-mono text-xs">{pkg.codigo_rastreio}</td>
                               <td className="p-2">
