@@ -246,23 +246,24 @@ function detectColumnsFromHeader(header: string[]): { format: string; indices: a
   // Support DOME as nome column
   const domeIdx = headerLower.findIndex((h) => h === "dome" || h === "nome" || h.includes("nome"))
 
-  // DOME format: DOME, CPF, TELEFONE, CODIGO_RASTREIO, ENDERECO_DESTINO, DESCRICAO_PRODUTO, ENVIO
-  const domeFormatIdx = headerLower.findIndex((h) => h === "dome")
+  // DOME/NOME format: NOME, CPF, TELEFONE, CODIGO_RASTREIO, ENDERECO_DESTINO, DESCRICAO_PRODUTO, ENVIO
+  const domeFormatIdx = headerLower.findIndex((h) => h === "dome" || h === "nome")
   const codigoRastreioIdx = headerLower.findIndex((h) => h.includes("codigo_rastreio") || h.includes("código_rastreio") || h.includes("codigo rastreio"))
   const enderecoDesinoIdx = headerLower.findIndex((h) => h.includes("endereco_destino") || h.includes("endereço_destino") || h.includes("endereco destino"))
   const descricaoProdutoIdx = headerLower.findIndex((h) => h.includes("descricao_produto") || h.includes("descrição_produto") || h.includes("descricao produto"))
 
-  if (domeFormatIdx >= 0 && cpfIdx >= 0) {
-    console.log("[v0] Detected DOME format")
+  // Detect by CODIGO_RASTREIO + ENDERECO_DESTINO + DESCRICAO_PRODUTO columns
+  if (codigoRastreioIdx >= 0 && enderecoDesinoIdx >= 0 && descricaoProdutoIdx >= 0) {
+    console.log("[v0] Detected DOME/NOME format (CODIGO_RASTREIO, ENDERECO_DESTINO, DESCRICAO_PRODUTO)")
     return {
       format: "DOME",
       indices: {
-        nome: domeFormatIdx,
-        cpf: cpfIdx,
-        telefone: telefoneIdx >= 0 ? telefoneIdx : -1,
-        rastreio: codigoRastreioIdx >= 0 ? codigoRastreioIdx : -1,
-        endereco: enderecoDesinoIdx >= 0 ? enderecoDesinoIdx : enderecoCompletoIdx >= 0 ? enderecoCompletoIdx : -1,
-        produto: descricaoProdutoIdx >= 0 ? descricaoProdutoIdx : nomeProdutoIdx >= 0 ? nomeProdutoIdx : -1,
+        nome: domeFormatIdx >= 0 ? domeFormatIdx : 0,
+        cpf: cpfIdx >= 0 ? cpfIdx : 1,
+        telefone: telefoneIdx >= 0 ? telefoneIdx : 2,
+        rastreio: codigoRastreioIdx,
+        endereco: enderecoDesinoIdx,
+        produto: descricaoProdutoIdx,
         valor: valorIdx >= 0 ? valorIdx : -1,
       },
     }
