@@ -260,8 +260,15 @@ export function detectColumnsFromHeader(header: string[]): { format: string; ind
   // Detect by CODIGO_RASTREIO + ENDERECO_DESTINO columns
   if (codigoRastreioIdx >= 0 && enderecoDesinoIdx >= 0) {
     const envioIdx = headerLower.findIndex((h) => h === "envio" || h.includes("envio") || h.includes("transportadora") || h.includes("carrier"))
+    
+    // Fallback: if descricaoProdutoIdx not found, try to find any column with "produto" or "descri"
+    let produtoFinalIdx = descricaoProdutoIdx
+    if (produtoFinalIdx < 0) {
+      produtoFinalIdx = headerLower.findIndex((h) => h.includes("produto") || h.includes("descri"))
+    }
+    
     console.log("[v0] Detected DOME/NOME format (CODIGO_RASTREIO, ENDERECO_DESTINO, DESCRICAO_PRODUTO/ENVIO)")
-    console.log("[v0] DOME indices - produto:", descricaoProdutoIdx, "envio:", envioIdx, "header:", headerLower)
+    console.log("[v0] DOME indices - produto:", produtoFinalIdx, "envio:", envioIdx, "header:", headerLower)
     return {
       format: "DOME",
       indices: {
@@ -270,7 +277,7 @@ export function detectColumnsFromHeader(header: string[]): { format: string; ind
         telefone: telefoneIdx >= 0 ? telefoneIdx : 2,
         rastreio: codigoRastreioIdx,
         endereco: enderecoDesinoIdx,
-        produto: descricaoProdutoIdx >= 0 ? descricaoProdutoIdx : -1,
+        produto: produtoFinalIdx >= 0 ? produtoFinalIdx : -1,
         envio: envioIdx >= 0 ? envioIdx : -1,
         valor: valorIdx >= 0 ? valorIdx : -1,
       },
