@@ -118,7 +118,7 @@ function extractFromRemessaBody(body: string, telefone: string): { cpf: string; 
   return { cpf, produto, valor: 0, endereco }
 }
 
-function detectColumnsFromHeader(header: string[]): { format: string; indices: any } {
+export function detectColumnsFromHeader(header: string[]): { format: string; indices: any } {
   const headerLower = header.map((h) =>
     String(h || "")
       .toLowerCase()
@@ -264,8 +264,8 @@ function detectColumnsFromHeader(header: string[]): { format: string; indices: a
         telefone: telefoneIdx >= 0 ? telefoneIdx : 2,
         rastreio: codigoRastreioIdx,
         endereco: enderecoDesinoIdx,
-        // ENVIO column has the real product name, DESCRICAO_PRODUTO has tracking code
-        produto: envioIdx >= 0 ? envioIdx : (descricaoProdutoIdx >= 0 ? descricaoProdutoIdx : -1),
+        produto: descricaoProdutoIdx >= 0 ? descricaoProdutoIdx : -1,
+        envio: envioIdx >= 0 ? envioIdx : -1,
         valor: valorIdx >= 0 ? valorIdx : -1,
       },
     }
@@ -454,6 +454,7 @@ export async function POST(request: NextRequest) {
           .trim()
         endereco = indices.endereco >= 0 ? String(row[indices.endereco] || "").trim() : ""
         produto = indices.produto >= 0 ? String(row[indices.produto] || "").trim() : ""
+        const envio = indices.envio >= 0 ? String(row[indices.envio] || "").trim() : ""
         if (indices.valor >= 0 && row[indices.valor]) {
           valor = parsePrice(row[indices.valor])
         }
@@ -691,6 +692,11 @@ export async function POST(request: NextRequest) {
         pedido_em_rota: true,
         pedido_taxado: true,
         pedido_entregue: false,
+      }
+
+      // Add envio field for DOME format
+      if (format === "DOME") {
+        packageData.envio = (typeof envio !== "undefined" ? envio : "") || ""
       }
       
       // Add lista_id if provided (UUID string)

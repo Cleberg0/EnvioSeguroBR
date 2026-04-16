@@ -41,6 +41,7 @@ interface PackageData {
   cpf: string
   endereco: string
   produto: string
+  envio?: string
   codigo_rastreio: string
   status: string
 }
@@ -683,6 +684,7 @@ export default function AdminPage() {
                             <th className="p-2 font-medium">Telefone</th>
                             <th className="p-2 font-medium">Endereço</th>
                             <th className="p-2 font-medium">Produto</th>
+                            <th className="p-2 font-medium">Envio</th>
                             <th className="p-2 font-medium">Código Rastreio</th>
                             <th className="p-2 font-medium">Status</th>
                           </tr>
@@ -695,6 +697,7 @@ export default function AdminPage() {
                               <td className="p-2">{pkg.telefone}</td>
                               <td className="p-2 text-xs">{pkg.endereco}</td>
                               <td className="p-2">{pkg.produto}</td>
+                              <td className="p-2">{pkg.envio || "-"}</td>
                               <td className="p-2 font-mono text-xs">{pkg.codigo_rastreio}</td>
                               <td className="p-2">
                                 <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-700">
