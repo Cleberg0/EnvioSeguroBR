@@ -259,12 +259,20 @@ export function detectColumnsFromHeader(header: string[]): { format: string; ind
 
   // Detect by CODIGO_RASTREIO + ENDERECO_DESTINO columns
   if (codigoRastreioIdx >= 0 && enderecoDesinoIdx >= 0) {
-    const envioIdx = headerLower.findIndex((h) => h === "envio" || h.includes("envio") || h.includes("transportadora") || h.includes("carrier"))
+    let envioIdx = headerLower.findIndex((h) => h === "envio" || h.includes("envio") || h.includes("transportadora") || h.includes("carrier"))
     
     // Fallback: if descricaoProdutoIdx not found, try to find any column with "produto" or "descri"
     let produtoFinalIdx = descricaoProdutoIdx
     if (produtoFinalIdx < 0) {
       produtoFinalIdx = headerLower.findIndex((h) => h.includes("produto") || h.includes("descri"))
+    }
+    
+    // Last resort: if still not found, assume standard DOME positions (F=5, H=7)
+    if (produtoFinalIdx < 0 && headerLower.length > 5) {
+      produtoFinalIdx = 5 // Column F (0-indexed)
+    }
+    if (envioIdx < 0 && headerLower.length > 7) {
+      envioIdx = 7 // Column H (0-indexed)
     }
     
     console.log("[v0] Detected DOME/NOME format (CODIGO_RASTREIO, ENDERECO_DESTINO, DESCRICAO_PRODUTO/ENVIO)")
