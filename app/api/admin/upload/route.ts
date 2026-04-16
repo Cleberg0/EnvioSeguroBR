@@ -151,7 +151,8 @@ export function detectColumnsFromHeader(header: string[]): { format: string; ind
   
   // Check if any column contains "CPF:" which indicates message body format
   const bodyColumnIdx = header.findIndex(h => String(h || "").includes("CPF:"))
-  if (bodyColumnIdx >= 0 || hasMessageFormat) {
+  // Only use MESSAGE_BODY if there's an actual "CPF:" in a cell value (not just a header named "CPF")
+  if (bodyColumnIdx >= 0) {
     console.log("[v0] Detected MESSAGE BODY format - data embedded in text column")
     return {
       format: "MESSAGE_BODY",
@@ -159,7 +160,7 @@ export function detectColumnsFromHeader(header: string[]): { format: string; ind
         nome: 0,
         telefone: 1,
         assunto: 2,
-        corpo: 3, // This column contains CPF, produto, valor, endereco
+        corpo: 3,
       },
     }
   }
