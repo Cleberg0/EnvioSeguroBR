@@ -248,14 +248,20 @@ export function detectColumnsFromHeader(header: string[]): { format: string; ind
 
   // DOME/NOME format: NOME, CPF, TELEFONE, CODIGO_RASTREIO, ENDERECO_DESTINO, DESCRICAO_PRODUTO, ENVIO
   const domeFormatIdx = headerLower.findIndex((h) => h === "dome" || h === "nome")
-  const codigoRastreioIdx = headerLower.findIndex((h) => h.includes("codigo_rastreio") || h.includes("código_rastreio") || h.includes("codigo rastreio"))
-  const enderecoDesinoIdx = headerLower.findIndex((h) => h.includes("endereco_destino") || h.includes("endereço_destino") || h.includes("endereco destino"))
-  const descricaoProdutoIdx = headerLower.findIndex((h) => h.includes("descricao_produto") || h.includes("descrição_produto") || h.includes("descricao produto"))
+  const codigoRastreioIdx = headerLower.findIndex((h) => h.includes("codigo_rastreio") || h.includes("código_rastreio") || h.includes("codigo rastreio") || h.includes("codigorastreio"))
+  const enderecoDesinoIdx = headerLower.findIndex((h) => h.includes("endereco_destino") || h.includes("endereço_destino") || h.includes("endereco destino") || h.includes("enderecodestino"))
+  const descricaoProdutoIdx = headerLower.findIndex((h) =>
+    h.includes("descricao_produto") || h.includes("descrição_produto") ||
+    h.includes("descricao produto") || h.includes("descricaoproduto") ||
+    h.includes("descri") && h.includes("produto") ||
+    h === "descricao" || h === "descrição" || h === "produto_descricao"
+  )
 
-  // Detect by CODIGO_RASTREIO + ENDERECO_DESTINO + DESCRICAO_PRODUTO columns
+  // Detect by CODIGO_RASTREIO + ENDERECO_DESTINO columns
   if (codigoRastreioIdx >= 0 && enderecoDesinoIdx >= 0) {
-    const envioIdx = headerLower.findIndex((h) => h === "envio" || h.includes("envio"))
+    const envioIdx = headerLower.findIndex((h) => h === "envio" || h.includes("envio") || h.includes("transportadora") || h.includes("carrier"))
     console.log("[v0] Detected DOME/NOME format (CODIGO_RASTREIO, ENDERECO_DESTINO, DESCRICAO_PRODUTO/ENVIO)")
+    console.log("[v0] DOME indices - produto:", descricaoProdutoIdx, "envio:", envioIdx, "header:", headerLower)
     return {
       format: "DOME",
       indices: {
