@@ -832,36 +832,30 @@ export default function AdminPage() {
                     id="gateway-name"
                     value={gatewayName}
                     onChange={(e) => setGatewayName(e.target.value)}
-                    placeholder="Hygros, Stripe, etc."
+                    placeholder="HorsePay"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="api-url">URL da API</Label>
-                  <Input
-                    id="api-url"
-                    value={apiUrl}
-                    onChange={(e) => setApiUrl(e.target.value)}
-                    placeholder="https://api.gateway.com.br/v1"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="secret-key">Secret Key</Label>
+                  <Label htmlFor="secret-key">Client Key (HorsePay)</Label>
                   <Input
                     id="secret-key"
-                    type="password"
                     value={secretKey}
                     onChange={(e) => setSecretKey(e.target.value)}
-                    placeholder="sk_live_..."
+                    placeholder="sua_client_key"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="company-id">Company ID</Label>
+                  <Label htmlFor="company-id">Client Secret (HorsePay)</Label>
                   <Input
                     id="company-id"
+                    type="password"
                     value={companyId}
                     onChange={(e) => setCompanyId(e.target.value)}
-                    placeholder="abc123..."
+                    placeholder="sua_client_secret"
                   />
+                </div>
+                <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-xs text-green-800">
+                  <strong>HorsePay:</strong> Preencha com as credenciais do painel HorsePay → Configurações → API Keys
                 </div>
                 <Button onClick={handleSaveGateway} className="w-full">
                   Salvar Configurações do Gateway

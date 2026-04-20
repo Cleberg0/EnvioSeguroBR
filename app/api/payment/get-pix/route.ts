@@ -1,8 +1,22 @@
 import { NextResponse } from "next/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 
-// MasterFy API configuration
-const MASTERFY_API_URL = "https://api.MasterFy.com.br/api/public/v1"
-const MASTERFY_API_TOKEN = "O36ReLi1zBnd5Y4aAPMHzDgIUKCqQhfhr4OajAIjbjAL0yeA37kqN8QthZLu"
+const HORSEPAY_AUTH_URL = "https://api.horsepay.io/auth/token"
+const HORSEPAY_ORDER_URL = "https://api.horsepay.io/api/orders/deposit"
+
+async function getHorsePayToken(clientKey: string, clientSecret: string): Promise<string | null> {
+  try {
+    const res = await fetch(HORSEPAY_AUTH_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ client_key: clientKey, client_secret: clientSecret }),
+    })
+    const data = await res.json()
+    return data.access_token || null
+  } catch {
+    return null
+  }
+}
 
 export async function GET(request: Request) {
   try {
@@ -13,18 +27,39 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Transaction ID required" }, { status: 400 })
     }
 
-    console.log("[MasterFy] Fetching transaction:", transactionId)
+    const supabase = createAdminClient()
 
-    const response = await fetch(`${MASTERFY_API_URL}/transactions/${transactionId}?api_token=${MASTERFY_API_TOKEN}`, {
+    // Get gateway credentials
+    const { data: gateway } = await supabase
+      .from("gateway_settings")
+      .select("*")
+      .eq("is_active", true)
+      .single()
+
+    const clientKey = gateway?.secret_key || ""
+    const clientSecret = gateway?.company_id || ""
+
+    if (!clientKey || !clientSecret) {
+      return NextResponse.json({ pixKey: null, transactionId, status: "unknown" })
+    }
+
+    const token = await getHorsePayToken(clientKey, clientSecret)
+    if (!token) {
+      return NextResponse.json({ pixKey: null, transactionId, status: "unknown" })
+    }
+
+    console.log("[HorsePay] Checking status for transaction:", transactionId)
+
+    const response = await fetch(`${HORSEPAY_ORDER_URL}/${transactionId}`, {
       method: "GET",
       headers: {
+        "Authorization": `Bearer ${token}`,
         "Content-Type": "application/json",
-        "Accept": "application/json",
       },
     })
 
     const text = await response.text()
-    console.log("[MasterFy] Get response:", text.substring(0, 500))
+    console.log("[HorsePay] Status response:", text.substring(0, 300))
 
     let data: any
     try {
@@ -33,39 +68,28 @@ export async function GET(request: Request) {
       return NextResponse.json({ pixKey: null, transactionId })
     }
 
-    // Extract PIX code - MasterFy uses pix.pix_qr_code
-    let pixCode = data.pix?.pix_qr_code || data.pix?.qrcode || data.pix?.qr_code || data.pix?.brcode || 
-                  data.pix?.emv || data.pix?.copy_paste || data.pix?.code ||
-                  data.pix?.qrCode || data.pix?.copyPaste ||
-                  data.qrcode || data.qr_code || data.qrCode || data.pixCode ||
-                  data.brcode || data.emv || data.copy_paste || data.copyPaste ||
-                  data.payment?.pix?.qrcode || data.payment?.qrCode || null
+    // HorsePay deposit status: "pending" or "paid"
+    const status = data.status || "pending"
+    const isPaid = status === "paid"
 
-    let qrCodeImage = data.pix?.qr_code_image || data.pix?.qrCodeImage || 
-                      data.qr_code_image || data.qrCodeImage || null
-
-    const status = data.status || data.payment_status
-
-    if (pixCode) {
-      console.log("[MasterFy] Found PIX code for transaction:", transactionId)
-      return NextResponse.json({
-        pixKey: pixCode,
-        qrCode: pixCode,
-        qrCodeImage: qrCodeImage,
-        transactionId,
-        status: status,
-      })
+    if (isPaid) {
+      // Update payment status in DB
+      try {
+        await supabase.from("cpf_tracking").update({
+          payment_status: "paid",
+          paid_at: new Date().toISOString(),
+        }).eq("payment_id", transactionId)
+      } catch {}
     }
 
-    console.log("[MasterFy] No PIX code found yet, status:", status)
     return NextResponse.json({
-      pixKey: null,
+      pixKey: null, // HorsePay doesn't return PIX code on status check
       transactionId,
-      status: status,
-      rawResponse: data,
+      status: isPaid ? "paid" : "pending",
     })
+
   } catch (error) {
-    console.error("[MasterFy] Error:", error)
-    return NextResponse.json({ error: "Failed to fetch PIX" }, { status: 500 })
+    console.error("[HorsePay] Get status error:", error)
+    return NextResponse.json({ error: "Failed to fetch status" }, { status: 500 })
   }
 }
