@@ -75,7 +75,7 @@ export async function POST(request: Request) {
     const payload = {
       payer_name: String(name).substring(0, 100),
       amount: amountInReais,
-      callback_url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://enviosegurobr.vercel.app"}/api/webhooks/horsepay`,
+      callback_url: `${process.env.NEXT_PUBLIC_SITE_URL || `https://${process.env.VERCEL_URL}` || "https://enviosegurobr.vercel.app"}/api/webhooks/horsepay`,
       client_reference_id: cpf,
       phone: "",
     }

@@ -68,7 +68,7 @@ export default function AdminPage() {
   const [totalPackages, setTotalPackages] = useState(0)
   const [cpfTracking, setCpfTracking] = useState<CpfTracking[]>([])
   const [loadingTracking, setLoadingTracking] = useState(false)
-  const [gatewayName, setGatewayName] = useState("Hygros")
+  const [gatewayName, setGatewayName] = useState("HorsePay")
   const [apiUrl, setApiUrl] = useState("")
   const [secretKey, setSecretKey] = useState("")
   const [companyId, setCompanyId] = useState("")
@@ -325,7 +325,7 @@ export default function AdminPage() {
     try {
       const response = await fetch("/api/admin/gateway")
       const data = await response.json()
-      setGatewayName(data.gateway_name || "Hygros")
+      setGatewayName(data.gateway_name || "HorsePay")
       setApiUrl(data.api_url || "")
       setSecretKey(data.secret_key || "")
       setCompanyId(data.company_id || "")
