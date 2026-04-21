@@ -516,9 +516,9 @@ export default function TrackingPage() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-center">
             <img
-              src="/EnvioBr-logo.png"
+              src={settings.logo_url || "/EnvioBr-logo.png"}
               alt="EnvioSeguroBR"
-              className="h-16 sm:h-20 w-auto object-contain"
+              className="h-24 sm:h-32 w-auto object-contain"
             />
           </div>
         </div>

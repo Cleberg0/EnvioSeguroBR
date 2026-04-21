@@ -50,6 +50,7 @@ export default function AdminPage() {
   const router = useRouter()
   const [companyName, setCompanyName] = useState("Rastreamento de Encomendas")
   const [logoUrl, setLogoUrl] = useState("")
+  const [uploadingLogo, setUploadingLogo] = useState(false)
   const [bannerUrl, setBannerUrl] = useState("")
   const [csvFile, setCsvFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
@@ -206,6 +207,38 @@ export default function AdminPage() {
     } catch (error) {
       setMessage({ type: "error", text: "Erro ao salvar configurações" })
       setTimeout(() => setMessage(null), 3000)
+    }
+  }
+
+  const handleUploadLogo = async (file: File) => {
+    setUploadingLogo(true)
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("type", "logo")
+      const response = await fetch("/api/admin/upload-image", {
+        method: "POST",
+        body: formData,
+      })
+      const data = await response.json()
+      if (response.ok && data.url) {
+        setLogoUrl(data.url)
+        // Auto-save
+        await fetch("/api/admin/settings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ company_name: companyName, logo_url: data.url, banner_url: bannerUrl }),
+        })
+        setMessage({ type: "success", text: "Logo enviada e salva com sucesso!" })
+        setTimeout(() => setMessage(null), 3000)
+      } else {
+        throw new Error(data.error || "Erro ao enviar logo")
+      }
+    } catch (error) {
+      setMessage({ type: "error", text: error instanceof Error ? error.message : "Erro ao enviar logo" })
+      setTimeout(() => setMessage(null), 3000)
+    } finally {
+      setUploadingLogo(false)
     }
   }
 
@@ -884,23 +917,31 @@ export default function AdminPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="logo-url">URL do Logo</Label>
-                  <Input
-                    id="logo-url"
-                    value={logoUrl}
-                    onChange={(e) => setLogoUrl(e.target.value)}
-                    placeholder="https://exemplo.com/logo.png"
-                  />
+                  <Label>Logo da Empresa</Label>
+                  <div className="flex items-center gap-3">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      disabled={uploadingLogo}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) handleUploadLogo(file)
+                      }}
+                      className="flex-1"
+                    />
+                    {uploadingLogo && <span className="text-xs text-gray-500">Enviando...</span>}
+                  </div>
+                  <p className="text-xs text-slate-500">Faça upload da imagem da logo (PNG, JPG, SVG)</p>
                   {logoUrl && (
-                    <div className="mt-4 flex items-center gap-4 rounded-lg border bg-slate-50 p-4">
+                    <div className="mt-3 flex items-center gap-4 rounded-lg border bg-slate-50 p-4">
                       <img
-                        src={logoUrl || "/placeholder.svg"}
+                        src={logoUrl}
                         alt="Preview do logo"
-                        className="h-16 w-16 object-contain"
+                        className="h-16 w-auto object-contain"
                       />
                       <div>
-                        <p className="text-sm font-medium">Preview do Logo</p>
-                        <p className="text-xs text-slate-600">Será exibido no canto superior esquerdo</p>
+                        <p className="text-sm font-medium">Logo atual</p>
+                        <p className="text-xs text-slate-600 break-all">{logoUrl}</p>
                       </div>
                     </div>
                   )}
